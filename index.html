@@ -488,14 +488,23 @@
             const grid = document.getElementById('resultsGrid');
             grid.innerHTML = '';
 
+            // Build a map: position (endCol) -> { name, original index }
+            const positionMap = new Array(ladderCount);
             for (let i = 0; i < paths.length; i++) {
                 const endCol = paths[i][paths[i].length - 1].col;
+                positionMap[endCol] = { name: names[i], idx: i };
+            }
+
+            // Display sorted by arrival position: 1번, 2번, ...
+            for (let pos = 0; pos < ladderCount; pos++) {
+                const entry = positionMap[pos];
+                if (!entry) continue;
                 const item = document.createElement('div');
                 item.className = 'result-item';
                 item.innerHTML = `
-                    <div class="from-name" style="color: ${COLORS[i % COLORS.length]}">${names[i]}</div>
+                    <div class="to-pos">${pos + 1}번</div>
                     <div class="arrow">&#8595;</div>
-                    <div class="to-pos">${endCol + 1}번</div>
+                    <div class="from-name" style="color: ${COLORS[entry.idx % COLORS.length]}">${entry.name}</div>
                 `;
                 grid.appendChild(item);
             }
