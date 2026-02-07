@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사다리타기 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 24px;
+            color: #e94560;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: #16213e;
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 1px solid #0f3460;
+        }
+
+        .controls label {
+            font-size: 0.95rem;
+            color: #a0a0b8;
+        }
+
+        .controls input[type="number"] {
+            width: 60px;
+            padding: 6px 10px;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .controls input[type="number"]:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            font-weight: 600;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        #btnApply {
+            background: #0f3460;
+            color: #e0e0e0;
+        }
+
+        #btnApply:hover {
+            background: #1a4a8a;
+        }
+
+        #btnStart {
+            background: #e94560;
+            color: #fff;
+            font-size: 1.1rem;
+            padding: 10px 32px;
+        }
+
+        #btnStart:hover {
+            background: #ff6b81;
+        }
+
+        #btnStart:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        #btnReset {
+            background: #533483;
+            color: #e0e0e0;
+        }
+
+        #btnReset:hover {
+            background: #6a45a0;
+        }
+
+        .names-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+            max-width: 900px;
+        }
+
+        .names-section input[type="text"] {
+            width: 100px;
+            padding: 6px 10px;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            background: #16213e;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .names-section input[type="text"]:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .game-area {
+            position: relative;
+            margin: 0 auto;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 12px;
+            background: #16213e;
+            border: 1px solid #0f3460;
+        }
+
+        .results {
+            margin-top: 20px;
+            background: #16213e;
+            border-radius: 12px;
+            border: 1px solid #0f3460;
+            padding: 16px 24px;
+            max-width: 900px;
+            width: 100%;
+            display: none;
+        }
+
+        .results h2 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            color: #e94560;
+            text-align: center;
+        }
+
+        .results-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .result-item {
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 10px 16px;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .result-item .from-name {
+            font-weight: 700;
+            color: #e94560;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .result-item .arrow {
+            color: #555;
+            font-size: 1.2rem;
+        }
+
+        .result-item .to-pos {
+            color: #53d8a6;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>사다리타기 게임</h1>
+
+    <div class="controls">
+        <label for="ladderCount">사다리 수:</label>
+        <input type="number" id="ladderCount" value="4" min="2" max="20">
+        <button id="btnApply">적용</button>
+        <button id="btnStart">사다리 시작</button>
+        <button id="btnReset">초기화</button>
+    </div>
+
+    <div class="names-section" id="namesSection"></div>
+
+    <div class="game-area">
+        <canvas id="ladderCanvas"></canvas>
+    </div>
+
+    <div class="results" id="resultsPanel">
+        <h2>결과</h2>
+        <div class="results-grid" id="resultsGrid"></div>
+    </div>
+
+    <script>
+        const COLORS = [
+            '#e94560', '#53d8a6', '#f5a623', '#7b68ee',
+            '#ff6b81', '#1dd1a1', '#feca57', '#5f27cd',
+            '#ff9ff3', '#48dbfb', '#ff6348', '#2ed573',
+            '#eccc68', '#a29bfe', '#fd79a8', '#00cec9',
+            '#e17055', '#6c5ce7', '#fab1a0', '#81ecec'
+        ];
+
+        let ladderCount = 4;
+        let names = [];
+        let rungs = []; // rungs[i] = array of y-positions for rungs between column i and i+1
+        let paths = []; // traced paths for each starting position
+        let animationId = null;
+        let isAnimating = false;
+
+        const canvas = document.getElementById('ladderCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const PADDING_TOP = 60;
+        const PADDING_BOTTOM = 60;
+        const PADDING_X = 60;
+        const RUNG_MIN_GAP = 30;
+        const LADDER_HEIGHT_PER_RUNG_AREA = 400;
+
+        function getCanvasSize() {
+            const spacing = Math.max(80, Math.min(120, 800 / ladderCount));
+            const width = PADDING_X * 2 + (ladderCount - 1) * spacing;
+            const height = PADDING_TOP + LADDER_HEIGHT_PER_RUNG_AREA + PADDING_BOTTOM;
+            return { width, height, spacing };
+        }
+
+        function initNames() {
+            const section = document.getElementById('namesSection');
+            section.innerHTML = '';
+            // Preserve existing names if possible
+            const oldNames = [...names];
+            names = [];
+            for (let i = 0; i < ladderCount; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `학생 ${i + 1}`;
+                input.value = oldNames[i] || `학생${i + 1}`;
+                input.dataset.index = i;
+                input.addEventListener('change', (e) => {
+                    names[parseInt(e.target.dataset.index)] = e.target.value;
+                });
+                section.appendChild(input);
+                names.push(input.value);
+            }
+        }
+
+        function syncNamesFromInputs() {
+            const inputs = document.querySelectorAll('#namesSection input');
+            inputs.forEach((inp, i) => {
+                names[i] = inp.value || `학생${i + 1}`;
+            });
+        }
+
+        function generateRungs() {
+            rungs = [];
+            const { height } = getCanvasSize();
+            const ladderTop = PADDING_TOP + 20;
+            const ladderBottom = height - PADDING_BOTTOM - 20;
+            const availableHeight = ladderBottom - ladderTop;
+
+            for (let i = 0; i < ladderCount - 1; i++) {
+                const numRungs = Math.floor(Math.random() * 5) + 3; // 3~7 rungs
+                const rungYs = [];
+                let attempts = 0;
+                while (rungYs.length < numRungs && attempts < 200) {
+                    const y = ladderTop + Math.random() * availableHeight;
+                    // ensure minimum gap between rungs in the same column
+                    const tooClose = rungYs.some(ry => Math.abs(ry - y) < RUNG_MIN_GAP);
+                    if (!tooClose) {
+                        rungYs.push(y);
+                    }
+                    attempts++;
+                }
+                rungYs.sort((a, b) => a - b);
+                rungs.push(rungYs);
+            }
+        }
+
+        function tracePaths() {
+            paths = [];
+            const { height, spacing } = getCanvasSize();
+            const ladderTop = PADDING_TOP + 20;
+            const ladderBottom = height - PADDING_BOTTOM - 20;
+
+            // Collect all rungs with their info, sorted by y
+            const allRungs = [];
+            for (let col = 0; col < rungs.length; col++) {
+                for (const y of rungs[col]) {
+                    allRungs.push({ col, y });
+                }
+            }
+            allRungs.sort((a, b) => a.y - b.y);
+
+            for (let start = 0; start < ladderCount; start++) {
+                let currentCol = start;
+                let currentY = ladderTop;
+                const path = [{ x: PADDING_X + currentCol * spacing, y: currentY, col: currentCol }];
+
+                // Walk down the ladder
+                // Process rungs from top to bottom
+                for (const rung of allRungs) {
+                    // Does this rung connect to currentCol?
+                    if (rung.col === currentCol) {
+                        // rung goes from currentCol to currentCol + 1 (go right)
+                        const x1 = PADDING_X + currentCol * spacing;
+                        const x2 = PADDING_X + (currentCol + 1) * spacing;
+                        path.push({ x: x1, y: rung.y, col: currentCol });
+                        path.push({ x: x2, y: rung.y, col: currentCol + 1 });
+                        currentCol = currentCol + 1;
+                    } else if (rung.col === currentCol - 1) {
+                        // rung goes from currentCol - 1 to currentCol (go left)
+                        const x1 = PADDING_X + currentCol * spacing;
+                        const x2 = PADDING_X + (currentCol - 1) * spacing;
+                        path.push({ x: x1, y: rung.y, col: currentCol });
+                        path.push({ x: x2, y: rung.y, col: currentCol - 1 });
+                        currentCol = currentCol - 1;
+                    }
+                }
+
+                path.push({ x: PADDING_X + currentCol * spacing, y: ladderBottom, col: currentCol });
+                paths.push(path);
+            }
+        }
+
+        function drawLadder(showRungs) {
+            const { width, height, spacing } = getCanvasSize();
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const ladderTop = PADDING_TOP + 20;
+            const ladderBottom = height - PADDING_BOTTOM - 20;
+
+            // Draw vertical lines
+            ctx.strokeStyle = '#3a3a5c';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < ladderCount; i++) {
+                const x = PADDING_X + i * spacing;
+                ctx.beginPath();
+                ctx.moveTo(x, ladderTop);
+                ctx.lineTo(x, ladderBottom);
+                ctx.stroke();
+            }
+
+            // Draw names on top
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            for (let i = 0; i < ladderCount; i++) {
+                const x = PADDING_X + i * spacing;
+                ctx.fillStyle = COLORS[i % COLORS.length];
+                ctx.fillText(names[i] || `학생${i + 1}`, x, ladderTop - 8);
+            }
+
+            // Draw position numbers at bottom
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#a0a0b8';
+            ctx.font = 'bold 16px "Segoe UI", sans-serif';
+            for (let i = 0; i < ladderCount; i++) {
+                const x = PADDING_X + i * spacing;
+                ctx.fillText(`${i + 1}`, x, ladderBottom + 10);
+            }
+
+            // Draw rungs
+            if (showRungs && rungs.length > 0) {
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#7a7a9c';
+                for (let col = 0; col < rungs.length; col++) {
+                    const x1 = PADDING_X + col * spacing;
+                    const x2 = PADDING_X + (col + 1) * spacing;
+                    for (const y of rungs[col]) {
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x2, y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function drawPaths(progress) {
+            const { spacing } = getCanvasSize();
+
+            for (let p = 0; p < paths.length; p++) {
+                const path = paths[p];
+                const color = COLORS[p % COLORS.length];
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+
+                // Calculate total path length
+                let totalLen = 0;
+                const segLengths = [];
+                for (let i = 1; i < path.length; i++) {
+                    const dx = path[i].x - path[i - 1].x;
+                    const dy = path[i].y - path[i - 1].y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    segLengths.push(len);
+                    totalLen += len;
+                }
+
+                const drawLen = totalLen * progress;
+                let drawn = 0;
+
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+
+                for (let i = 0; i < segLengths.length; i++) {
+                    if (drawn + segLengths[i] <= drawLen) {
+                        ctx.lineTo(path[i + 1].x, path[i + 1].y);
+                        drawn += segLengths[i];
+                    } else {
+                        const remain = drawLen - drawn;
+                        const t = remain / segLengths[i];
+                        const x = path[i].x + (path[i + 1].x - path[i].x) * t;
+                        const y = path[i].y + (path[i + 1].y - path[i].y) * t;
+                        ctx.lineTo(x, y);
+                        break;
+                    }
+                }
+                ctx.stroke();
+
+                // Draw circle at current head position
+                if (progress > 0) {
+                    let headX, headY;
+                    let d = 0;
+                    for (let i = 0; i < segLengths.length; i++) {
+                        if (d + segLengths[i] <= drawLen) {
+                            d += segLengths[i];
+                            if (i === segLengths.length - 1) {
+                                headX = path[i + 1].x;
+                                headY = path[i + 1].y;
+                            }
+                        } else {
+                            const remain = drawLen - d;
+                            const t = remain / segLengths[i];
+                            headX = path[i].x + (path[i + 1].x - path[i].x) * t;
+                            headY = path[i].y + (path[i + 1].y - path[i].y) * t;
+                            break;
+                        }
+                    }
+                    if (headX !== undefined) {
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.arc(headX, headY, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function showResults() {
+            const panel = document.getElementById('resultsPanel');
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < paths.length; i++) {
+                const endCol = paths[i][paths[i].length - 1].col;
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.innerHTML = `
+                    <div class="from-name" style="color: ${COLORS[i % COLORS.length]}">${names[i]}</div>
+                    <div class="arrow">&#8595;</div>
+                    <div class="to-pos">${endCol + 1}번</div>
+                `;
+                grid.appendChild(item);
+            }
+
+            panel.style.display = 'block';
+        }
+
+        function animate() {
+            const duration = 2000; // 2 seconds
+            const startTime = performance.now();
+
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Ease out
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                drawLadder(true);
+                drawPaths(eased);
+
+                if (progress < 1) {
+                    animationId = requestAnimationFrame(step);
+                } else {
+                    isAnimating = false;
+                    document.getElementById('btnStart').disabled = false;
+                    showResults();
+                }
+            }
+
+            animationId = requestAnimationFrame(step);
+        }
+
+        // Event listeners
+        document.getElementById('btnApply').addEventListener('click', () => {
+            const val = parseInt(document.getElementById('ladderCount').value);
+            if (val >= 2 && val <= 20) {
+                ladderCount = val;
+                initNames();
+                rungs = [];
+                paths = [];
+                document.getElementById('resultsPanel').style.display = 'none';
+                drawLadder(false);
+            }
+        });
+
+        document.getElementById('btnStart').addEventListener('click', () => {
+            if (isAnimating) return;
+            isAnimating = true;
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('resultsPanel').style.display = 'none';
+
+            syncNamesFromInputs();
+            generateRungs();
+            tracePaths();
+            drawLadder(true);
+            animate();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            isAnimating = false;
+            document.getElementById('btnStart').disabled = false;
+            rungs = [];
+            paths = [];
+            document.getElementById('resultsPanel').style.display = 'none';
+            syncNamesFromInputs();
+            drawLadder(false);
+        });
+
+        // Initialize
+        initNames();
+        drawLadder(false);
+    </script>
+</body>
+</html>
